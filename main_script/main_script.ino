@@ -35,7 +35,11 @@ const unsigned long DELAY_CONST = 500;
 const unsigned long THRESHOLD = 1820; // delay-distance threshold (set to 2000);
 
 // buttonPin is for the user to turn off the alert 
-const int buttonPin = 13;
+const int buttonPin = 6;
+const int alertLED = 3;
+const int alertSpeaker = 4;
+// dnd: Do Not Disturb mode
+const int dndLED = 5;
 
 byte addresses[][6] = {"1Node","2Node"};
 
@@ -52,6 +56,9 @@ void setup() {
 
   radio.begin();
   const int garbage = 0;
+  pinMode(alertLED, OUTPUT);
+  pinMode(alertSpeaker, OUTPUT);
+  pinMode(dndLED, OUTPUT);
   pinMode(buttonPin, INPUT);
   for(int k = 0; k < RUN_LENGTH; k++){
     runVal.push(garbage);
@@ -192,7 +199,7 @@ void alert_user(){
   bool buttonState = digitalRead(buttonPin);
   
   while(buttonState != HIGH){
-    Serial.println("Cane Not Near!");
+    Serial.println("Don't forget your walker!");
     buttonState = digitalRead(buttonPin);
     delay(100);
   }
