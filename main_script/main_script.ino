@@ -21,7 +21,7 @@ TO DO:
 
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
-bool radioNumber = 1;
+bool radioNumber = 0;
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
 RF24 radio(7,8);
 /**********************************************************/
@@ -35,7 +35,7 @@ const unsigned long THRESHOLD = 1830; // delay-distance threshold (set to 2000);
 // buttonPin is for the user to turn off the alert 
 const int buttonPin = 4;
 const int garbage = 0;
-//const int alertLED = 3;
+const int alertLED = 9;
 //const int alertSpeaker = 4;
 // dnd: Do Not Disturb mode
 //const int dndLED = 5;
@@ -54,7 +54,7 @@ void setup() {
   Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
 
   radio.begin();
-//  pinMode(alertLED, OUTPUT);
+  pinMode(alertLED, OUTPUT);
 //  pinMode(alertSpeaker, OUTPUT);
 //  pinMode(dndLED, OUTPUT);
   pinMode(buttonPin, INPUT);
@@ -159,7 +159,10 @@ if (role == 1)  {
       while (radio.available()) {                                   // While there is data ready
         radio.read( &got_time, sizeof(unsigned long) );             // Get the payload
       }
-     
+      if (got_time == 26984):
+      {
+        Serial.println("Out of range!")
+      }
       radio.stopListening();                                        // First, stop listening so we can talk   
       radio.write( &got_time, sizeof(unsigned long) );              // Send the final one back.      
       radio.startListening();                                       // Now, resume listening so we catch the next packets.     
@@ -193,14 +196,12 @@ if (role == 1)  {
 } // Loop
 
 void alert_user(){
-  // check alerting button state
-  bool buttonState = digitalRead(buttonPin);
-  
-  while(buttonState != LOW){
+  // check alerting button state  
+  while(digitalRead(buttonPin) != LOW){
     Serial.println("Don't forget your walker!");
-    buttonState = digitalRead(buttonPin);
     delay(100);
   }
+  // when user turns off the alert, refresh the queue
   const int garbage = 0;
   for(int k = 0; k < RUN_LENGTH; k++){
     runVal.pop();
