@@ -1,10 +1,21 @@
 #include <QueueList.h>
-
-
 /*
 * Getting Started example sketch for nRF24L01+ radios
 * This is a very basic example of how to send data from one node to another
 * Updated: Dec 2014 by TMRh20
+*/
+
+/* 
+* Modified by UWHIT Fall 2016: Reminder tool for walking aids
+* How this code works:
+* Use the delay between the call and response time of 2 RF tranceivers to calculate running avg
+* Use delay time to interpret distance
+* Alert the user when the response time gets too long
+
+TO DO:
+* More robust mechanism to detect distance from the user; maybe use the # of failed pinging
+* On/Off switch for the device
+* Alert user functions requires more alerting mechanism (i.e. LED, vibration, sound)
 */
 
 #include <SPI.h>
@@ -17,14 +28,13 @@ bool radioNumber = 0;
 RF24 radio(9,53);
 /**********************************************************/
 
-
-
 QueueList <unsigned long> runVal;
 unsigned long runAvg = 0;
 unsigned long runSum = 0;
 const unsigned long DELAY_CONST = 500;
 const unsigned long THRESHOLD = 1820; // delay-distance threshold (set to 2000);
 
+// buttonPin is for the user to turn off the alert 
 const int buttonPin = 13;
 
 byte addresses[][6] = {"1Node","2Node"};
@@ -178,11 +188,11 @@ if (role == 1)  {
 } // Loop
 
 void alert_user(){
- 
+  // check alerting button state
   bool buttonState = digitalRead(buttonPin);
   
   while(buttonState != HIGH){
-    Serial.println("get ur fuckin cane");
+    Serial.println("Cane Not Near!");
     buttonState = digitalRead(buttonPin);
     delay(100);
   }
