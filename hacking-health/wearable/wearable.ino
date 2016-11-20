@@ -7,11 +7,21 @@
 
 #include <SPI.h>
 #include "RF24.h"
+#include "pitches.h"
 
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
 bool radioNumber = 1;
-
+const unsigned long errNum = 544503119;
+const int alertLED = 9;
+const int alertSpeaker = 4;
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int noteDurations[] = {
+  4, 8, 8, 4, 4, 4, 4, 4
+};
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
 RF24 radio(7,8);
 /**********************************************************/
@@ -22,7 +32,8 @@ byte addresses[][6] = {"1Node","2Node"};
 bool role = 0;
 
 void setup() {
-  pinMode(13, OUTPUT);
+  pinMode(alertLED, OUTPUT);
+  pinMode(alertSpeaker, OUTPUT);
   
   Serial.begin(115200);
   Serial.println(F("RF24/examples/GettingStarted"));
@@ -105,12 +116,25 @@ if (role == 1)  {
     unsigned long got_time;
     
     if( radio.available()){
-      bool far = radio.testRPD(); 
-      Serial.println(far);
-      
-                                                                    // Variable for the received timestamp
+      bool inRange = radio.testRPD(); 
+      Serial.println(inRange);
+
       while (radio.available()) {                                   // While there is data ready
         radio.read( &got_time, sizeof(unsigned long) );             // Get the payload
+        Serial.println(got_time);
+        if (! inRange){
+          Serial.println("Out of range!!!");
+          digitalWrite(alertLED, HIGH);
+          for (int thisNote = 0; thisNote < 8; thisNote++) {
+            int noteDuration = 1000 / noteDurations[thisNote];
+            tone(alertSpeaker, melody[thisNote], noteDuration);
+            int pauseBetweenNotes = noteDuration * 1.30;
+            delay(pauseBetweenNotes);
+            // stop the tone playing:
+            noTone(alertSpeaker);
+          }
+          got_time = 123;        
+        }
       }
      
       radio.stopListening();                                        // First, stop listening so we can talk   
@@ -120,28 +144,5 @@ if (role == 1)  {
       Serial.println(got_time);  
    }
  }
-
-
-
-
-/****************** Change Roles via Serial Commands ***************************/
-
-  if ( Serial.available() )
-  {
-    char c = toupper(Serial.read());
-    if ( c == 'T' && role == 0 ){      
-      Serial.println(F("*** CHANGING TO TRANSMIT ROLE -- PRESS 'R' TO SWITCH BACK"));
-      role = 1;                  // Become the primary transmitter (ping out)
-    
-   }else
-    if ( c == 'R' && role == 1 ){
-      Serial.println(F("*** CHANGING TO RECEIVE ROLE -- PRESS 'T' TO SWITCH BACK"));      
-       role = 0;                // Become the primary receiver (pong back)
-       radio.startListening();
-       
-    }
-  }
-
-
 } // Loop
 
