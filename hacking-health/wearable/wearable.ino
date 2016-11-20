@@ -12,7 +12,7 @@
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
 bool radioNumber = 1;
-const unsigned long errNum = 544503119;
+unsigned long outRangeCounter = 0;
 const int alertLED = 9;
 const int alertSpeaker = 4;
 int melody[] = {
@@ -36,8 +36,7 @@ void setup() {
   pinMode(alertSpeaker, OUTPUT);
   
   Serial.begin(115200);
-  Serial.println(F("RF24/examples/GettingStarted"));
-  Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
+  Serial.println(F("RF24/Wearable Portion Ready!!"));
   
   radio.begin();
 
@@ -118,22 +117,32 @@ if (role == 1)  {
     if( radio.available()){
       bool inRange = radio.testRPD(); 
       Serial.println(inRange);
+      if (inRange == 0){
+        outRangeCounter += 1;
+      }
+      else if(inRange == 1){
+        outRangeCounter = 0;
+      }
 
       while (radio.available()) {                                   // While there is data ready
         radio.read( &got_time, sizeof(unsigned long) );             // Get the payload
+        Serial.print("got_time");
         Serial.println(got_time);
-        if (! inRange){
+        if (! inRange && outRangeCounter >= 3){
           Serial.println("Out of range!!!");
           digitalWrite(alertLED, HIGH);
-          for (int thisNote = 0; thisNote < 8; thisNote++) {
-            int noteDuration = 1000 / noteDurations[thisNote];
-            tone(alertSpeaker, melody[thisNote], noteDuration);
-            int pauseBetweenNotes = noteDuration * 1.30;
-            delay(pauseBetweenNotes);
-            // stop the tone playing:
-            noTone(alertSpeaker);
+          for (int i = 0; i < 3; i++){
+            for (int thisNote = 0; thisNote < 8; thisNote++) {
+              int noteDuration = 1000 / noteDurations[thisNote];
+              tone(alertSpeaker, melody[thisNote], noteDuration);
+              int pauseBetweenNotes = noteDuration * 1.30;
+              delay(pauseBetweenNotes);
+              // stop the tone playing:
+              noTone(alertSpeaker);
+            }
           }
-          got_time = 123;        
+          got_time = 123;
+          outRangeCounter = 0;        
         }
       }
      
