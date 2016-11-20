@@ -22,7 +22,7 @@ QueueList <unsigned long> runVal;
 unsigned long runAvg = 0;
 unsigned long runSum = 0;
 const unsigned long DELAY_CONST = 100;
-const unsigned long THRESHOLD = 2000; // delay-distance threshold (set to 2000);
+const unsigned long THRESHOLD = 1000; // delay-distance threshold (set to 2000);
 
 // buttonPin is for the user to turn off the alert 
 const int buttonPin = 4;
@@ -121,8 +121,8 @@ void alert_user(){
     buttonState = digitalRead(buttonPin);
     digitalWrite(alertLED,HIGH);
     delay(100);
-    digitalWrite(alertLED,LOW);
   }
+  digitalWrite(alertLED,LOW);
   char hi[32] = "hello";
   radio.write(&text, sizeof(text));
   const int garbage = 0;
