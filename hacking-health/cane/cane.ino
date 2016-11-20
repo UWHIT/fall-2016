@@ -7,10 +7,10 @@
 
 #include <SPI.h>
 #include "RF24.h"
-#include <QueueList.h>
+
 /****************** User Config ***************************/
 /***      Set this radio as radio number 0 or 1         ***/
-bool radioNumber = 1;
+bool radioNumber = 0;
 
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
 RF24 radio(7,8);
@@ -18,40 +18,25 @@ RF24 radio(7,8);
 
 byte addresses[][6] = {"1Node","2Node"};
 
-QueueList <unsigned long> runVal;
-unsigned long runAvg = 0;
-unsigned long runSum = 0;
-const unsigned long DELAY_CONST = 100;
-const unsigned long THRESHOLD = 1000; // delay-distance threshold (set to 2000);
-
-// buttonPin is for the user to turn off the alert 
-const int buttonPin = 4;
-const int garbage = 0;
-const int alertLED = 9;
-int RUN_LENGTH = 150;
-int numFail = 0;
+// Used to control whether this node is sending or receiving
+bool role = 1;
 
 void setup() {
-  Serial.begin(115200);
+  /*Serial.begin(115200);
   Serial.println(F("RF24/examples/GettingStarted"));
   Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
-  
+  */
   radio.begin();
-  pinMode(alertLED, OUTPUT);
-  pinMode(buttonPin, INPUT);
-  for(int k = 0; k < RUN_LENGTH; k++){
-    runVal.push(garbage);
-  }
+
   // Set the PA Level low to prevent power supply related issues since this is a
  // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setPALevel(RF24_PA_MAX);
   
   // Open a writing and reading pipe on each radio, with opposite addresses
   if(radioNumber){
     radio.openWritingPipe(addresses[1]);
     radio.openReadingPipe(1,addresses[0]);
-  }
-  else{
+  }else{
     radio.openWritingPipe(addresses[0]);
     radio.openReadingPipe(1,addresses[1]);
   }
@@ -60,13 +45,20 @@ void setup() {
   radio.startListening();
 }
 
-void loop() { 
+void loop() {
+  
+  
 /****************** Ping Out Role ***************************/  
+if (role == 1)  {
+    
     radio.stopListening();                                    // First, stop listening so we can talk.
+    
+    
+    //Serial.println(F("Now sending"));
 
     unsigned long start_time = micros();                             // Take the time, and send it.  This will block until complete
      if (!radio.write( &start_time, sizeof(unsigned long) )){
-       Serial.println(F("failed"));
+       //Serial.println(F("failed"));
      }
         
     radio.startListening();                                    // Now, continue listening
@@ -82,54 +74,69 @@ void loop() {
     }
         
     if ( timeout ){                                             // Describe the results
-        Serial.println(F("Failed, response timed out."));
-    }
-    else{
+        //Serial.println(F("Failed, response timed out."));
+    }else{
         unsigned long got_time;                                 // Grab the response, compare, and send to debugging spew
         radio.read( &got_time, sizeof(unsigned long) );
         unsigned long end_time = micros();
-
-        runSum -= runVal.pop();
-        runVal.push(end_time - start_time);
-        runSum += (end_time - start_time);
-
-        runAvg = runSum / RUN_LENGTH;
-
-        if (runAvg > THRESHOLD){
-          alert_user();
-        }
+        /*
         // Spew it
-//        Serial.print("Running average: ");
-        Serial.println(runAvg);
-//        Serial.print("Running sum: "); Serial.println(runSum);
+        Serial.print(F("Sent "));
+        Serial.print(start_time);
+        Serial.print(F(", Got response "));
+        Serial.print(got_time);
+        Serial.print(F(", Round-trip delay "));
+        Serial.print(end_time-start_time);
+        Serial.println(F(" microseconds"));*/
     }
 
     // Try again 1s later
-    delay(DELAY_CONST);
+    delay(1000);
+  }
+
+
+
+/****************** Pong Back Role ***************************/
+
+  if ( role == 0 )
+  {
+    unsigned long got_time;
+    
+    if( radio.available()){
+                                                                    // Variable for the received timestamp
+      while (radio.available()) {                                   // While there is data ready
+        radio.read( &got_time, sizeof(unsigned long) );             // Get the payload
+      }
+     
+      radio.stopListening();                                        // First, stop listening so we can talk   
+      radio.write( &got_time, sizeof(unsigned long) );              // Send the final one back.      
+      radio.startListening();                                       // Now, resume listening so we catch the next packets.     
+      Serial.print(F("Sent response "));
+      Serial.println(got_time);  
+   }
+ }
+
+
+
+
+/****************** Change Roles via Serial Commands ***************************/
+
+  /*if ( Serial.available() )
+  {
+    char c = toupper(Serial.read());
+    if ( c == 'T' && role == 0 ){      
+      Serial.println(F("*** CHANGING TO TRANSMIT ROLE -- PRESS 'R' TO SWITCH BACK"));
+      role = 1;                  // Become the primary transmitter (ping out)
+    
+   }else
+    if ( c == 'R' && role == 1 ){
+      Serial.println(F("*** CHANGING TO RECEIVE ROLE -- PRESS 'T' TO SWITCH BACK"));      
+       role = 0;                // Become the primary receiver (pong back)
+       radio.startListening();
+       
+    }
+  }*/
+
+
 } // Loop
 
-void alert_user(){
-  // check alerting button state
-  bool buttonState = digitalRead(buttonPin);
-  radio.stopListening();
-  char text[32] = "Out of range!";
-  radio.write(&text, sizeof(text));
-  
-  while(buttonState != LOW){
-    Serial.println("Don't forget your walker!");
-    radio.write(&text, sizeof(text));
-    buttonState = digitalRead(buttonPin);
-    digitalWrite(alertLED,HIGH);
-    delay(100);
-  }
-  digitalWrite(alertLED,LOW);
-  char hi[32] = "hello";
-  radio.write(&text, sizeof(text));
-  const int garbage = 0;
-  for(int k = 0; k < RUN_LENGTH; k++){
-    runVal.pop();
-    runVal.push(garbage);
-  }
-    runSum = 0;
-    runAvg = 0;
-}
