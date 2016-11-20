@@ -1,4 +1,4 @@
-/*
+/*/*
 * Getting Started example sketch for nRF24L01+ radios
 * This is a very basic example of how to send data from one node to another
 * Updated: Dec 2014 by TMRh20
@@ -30,7 +30,7 @@ QueueList <unsigned long> runVal;
 unsigned long runAvg = 0;
 unsigned long runSum = 0;
 const unsigned long DELAY_CONST = 10;
-const unsigned long THRESHOLD = 1830; // delay-distance threshold (set to 2000);
+const unsigned long THRESHOLD = 3000; // delay-distance threshold (set to 2000);
 
 // buttonPin is for the user to turn off the alert 
 const int buttonPin = 4;
@@ -86,9 +86,6 @@ void loop() {
 if (role == 1)  {
     
     radio.stopListening();                                    // First, stop listening so we can talk.
-    
-    
-//    Serial.println(F("Now sending"));
 
     unsigned long start_time = micros();                             // Take the time, and send it.  This will block until complete
      if (!radio.write( &start_time, sizeof(unsigned long) )){
@@ -137,9 +134,9 @@ if (role == 1)  {
 //        Serial.println(end_time-start_time);
 //        Serial.println("");
 //        Serial.println(F(" microseconds"));
-        Serial.print("Running average: ");
-        Serial.println(runAvg);
-        Serial.print("Running sum: "); Serial.println(runSum);
+//        Serial.print("Running average: ");
+//        Serial.println(runAvg);
+//        Serial.print("Running sum: "); Serial.println(runSum);
     }
         
     // Try again 1s later
@@ -159,15 +156,15 @@ if (role == 1)  {
       while (radio.available()) {                                   // While there is data ready
         radio.read( &got_time, sizeof(unsigned long) );             // Get the payload
       }
-      if (got_time == 26984):
-      {
-        Serial.println("Out of range!")
-      }
-      radio.stopListening();                                        // First, stop listening so we can talk   
-      radio.write( &got_time, sizeof(unsigned long) );              // Send the final one back.      
-      radio.startListening();                                       // Now, resume listening so we catch the next packets.     
-      Serial.print(F("Sent response "));
-      Serial.println(got_time);  
+    if(got_time == 26984)
+    {
+      Serial.println("Out of range!");
+    }
+    radio.stopListening();                                        // First, stop listening so we can talk   
+    radio.write( &got_time, sizeof(unsigned long) );              // Send the final one back.      
+    radio.startListening();                                       // Now, resume listening so we catch the next packets.     
+    Serial.print(F("Sent response "));
+    Serial.println(got_time);  
    }
  }
 
@@ -196,12 +193,22 @@ if (role == 1)  {
 } // Loop
 
 void alert_user(){
-  // check alerting button state  
-  while(digitalRead(buttonPin) != LOW){
+  // check alerting button state
+  bool buttonState = digitalRead(buttonPin);
+  radio.stopListening();
+  char text[32] = "hi";
+  radio.write(&text, sizeof(text));
+  
+  while(buttonState != LOW){
     Serial.println("Don't forget your walker!");
+    radio.write(&text, sizeof(text));
+    buttonState = digitalRead(buttonPin);
+    digitalWrite(alertLED,HIGH);
     delay(100);
+    digitalWrite(alertLED,LOW);
   }
-  // when user turns off the alert, refresh the queue
+  char hi[32] = "hello";
+  radio.write(&text, sizeof(text));
   const int garbage = 0;
   for(int k = 0; k < RUN_LENGTH; k++){
     runVal.pop();
