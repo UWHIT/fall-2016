@@ -19,9 +19,16 @@ RF24 radio(7,8);
 byte addresses[][6] = {"1Node","2Node"};
 
 // Used to control whether this node is sending or receiving
-bool role = 0;
+bool role = 1;
+
+const int led = 4;
+const int btn = 2;
+
+bool btnPressed = false; 
 
 void setup() {
+  pinMode(led,OUTPUT);
+  
   Serial.begin(115200);
   Serial.println(F("RF24/examples/GettingStarted"));
   Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
@@ -29,8 +36,9 @@ void setup() {
   radio.begin();
 
   // Set the PA Level low to prevent power supply related issues since this is a
- // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
-  radio.setPALevel(RF24_PA_LOW);
+  // getting_started sketch, and the likelihood of close proximity of the devices. RF24_PA_MAX is default.
+  //this causes signal strength to become weak at about 4m away
+  radio.setPALevel(RF24_PA_MAX);
   
   // Open a writing and reading pipe on each radio, with opposite addresses
   if(radioNumber){
@@ -56,8 +64,16 @@ if (role == 1)  {
     
     Serial.println(F("Now sending"));
 
-    unsigned long start_time = micros();                             // Take the time, and send it.  This will block until complete
-     if (!radio.write( &start_time, sizeof(unsigned long) )){
+    bool pressed = digitalRead(btn);
+    if(pressed){
+      btnPressed = true;
+      digitalWrite(led,LOW);
+    }
+    else{
+      btnPressed = false;
+    }
+
+     if (!radio.write( &btnPressed, sizeof(bool) )){
        Serial.println(F("failed"));
      }
         
@@ -76,18 +92,20 @@ if (role == 1)  {
     if ( timeout ){                                             // Describe the results
         Serial.println(F("Failed, response timed out."));
     }else{
-        unsigned long got_time;                                 // Grab the response, compare, and send to debugging spew
-        radio.read( &got_time, sizeof(unsigned long) );
+        bool alarmTriggered;                                 // Grab the response, compare, and send to debugging spew
+        radio.read( &alarmTriggered, sizeof(bool) );
+
+        if(alarmTriggered){
+          digitalWrite(led, HIGH);
+        }
+        
         unsigned long end_time = micros();
         
         // Spew it
-        Serial.print(F("Sent "));
-        Serial.print(start_time);
-        Serial.print(F(", Got response "));
-        Serial.print(got_time);
-        Serial.print(F(", Round-trip delay "));
-        Serial.print(end_time-start_time);
-        Serial.println(F(" microseconds"));
+        Serial.print(F("Sent btnPressed: "));
+        Serial.print(btnPressed);
+        Serial.print(F(", Got response alarmTriggered: "));
+        Serial.println(alarmTriggered);
     }
 
     // Try again 1s later
