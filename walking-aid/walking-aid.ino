@@ -60,7 +60,7 @@ void loop() {
     
     
     if(timeout){
-        Serial.println("Failed to receive response within 200 ms"));
+        Serial.println("Failed to receive response within 200 ms");
     } else{
         bool alertOn = false;
         radio.read(&alertOn, sizeof(bool));
