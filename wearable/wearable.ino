@@ -5,6 +5,7 @@ with a melody, until the button on the walking-aid component is pressed.*/
 
 
 //to use nRF24L01 modules
+
 #include <SPI.h>
 #include "RF24.h" //from https://github.com/TMRh20/RF24
 
