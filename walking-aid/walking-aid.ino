@@ -76,7 +76,7 @@ void loop() {
     }
     
     
-    delay(100); //try again 100 ms later
+    delay(333);
 }
 
 void btnIsr(){
