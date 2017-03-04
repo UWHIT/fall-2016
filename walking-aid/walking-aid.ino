@@ -14,6 +14,9 @@ const int btn = 2; //pin 2
 const int led = 4; //pin 4
 
 
+volatile bool btnPressed = false;
+
+
 void setup() {
     radio.begin();
     
@@ -24,9 +27,10 @@ void setup() {
     radio.setPALevel(RF24_PA_MAX); //sets power level of transmitted pings
     
     
-    Serial.begin(115200);
+    Serial.begin(115200); //for debugging
     
     
+    attachInterrupt(digitalPinToInterrupt(btn), btnIsr, RISING);
     pinMode(led,OUTPUT);
     
     
@@ -36,15 +40,16 @@ void setup() {
 void loop() {
     radio.stopListening(); //stop listening so we can talk
     Serial.println("Now sending");
-    
-    bool btnPressed = digitalRead(btn);
-    if(btnPressed){
-        digitalWrite(led,LOW);
-    }
-    
+
     if(!radio.write(&btnPressed, sizeof(bool))){
         Serial.println("Failed to send data");
     }
+
+    if(btnPressed){
+      digitalWrite(led,LOW);
+    }
+
+    btnPressed = false;
     
     
     radio.startListening();
@@ -71,6 +76,10 @@ void loop() {
     }
     
     
-    delay(1000); //try again 1 s later
+    delay(333);
+}
+
+void btnIsr(){
+  btnPressed = true;
 }
 

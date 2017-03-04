@@ -5,16 +5,11 @@ with a melody, until the button on the walking-aid component is pressed.*/
 
 
 //to use nRF24L01 modules
-
 #include <SPI.h>
 #include "RF24.h" //from https://github.com/TMRh20/RF24
 
-//for playing alert melody
-#include "pitches.h"
-
 
 RF24 radio(7,8); //set up nRF24L01 radio on SPI bus plus pins 7 & 8
-const int speaker = 2; //pin 2
 const int led = 4; //pin 4
 
 
@@ -24,18 +19,6 @@ int numWeaksInARow = 0; //number of received pings with weak signals
 const int numWeaksInARowToTriggerAlert = 3;
 
 bool alertOn = false;
-
-//alert melody
-int melody[] = {
-    NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
-};
-
-//note durations: 4 = quarter note, 8 = eighth note, etc.
-int noteDurations[] = {
-    4, 8, 8, 4, 4, 4, 4, 4
-};
-
-const int numberOfNotes = 8;
 
 
 void setup() {
@@ -75,9 +58,7 @@ void loop() {
             }
         }
         
-        if(alertOn){
-            alertUser();
-        }
+        digitalWrite(led, alertOn);
         
 
         while (radio.available()) {
@@ -91,19 +72,5 @@ void loop() {
         radio.stopListening(); //stop listening so we can talk
         radio.write(&alertOn, sizeof(bool));
         radio.startListening(); //resume listening to catch next pings
-    }
-}
-
-// Plays alert melody.
-void alertUser(){
-    for (int thisNote = 0; thisNote < numberOfNotes; thisNote++) {
-        int noteDuration = 1000 / noteDurations[thisNote]; //ms
-        int pauseBetweenNotes = noteDuration * 1.30; //ms
-        
-        tone(speaker, melody[thisNote], noteDuration);
-        digitalWrite(led,HIGH);
-        delay(pauseBetweenNotes);
-        noTone(speaker);
-        digitalWrite(led,LOW);
     }
 }
